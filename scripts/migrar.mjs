@@ -29,9 +29,25 @@ if (url.includes("[YOUR-PASSWORD]")) {
   process.exit(1);
 }
 
+// Se separa la cadena a mano para que la contraseña pueda tener símbolos
+// (#, ?, /, %…) sin necesidad de codificarlos.
+const partes = url.match(/^postgres(?:ql)?:\/\/([^:]+):(.*)@([^@:/]+):(\d+)\/([^?]+)/);
+if (!partes) {
+  console.error("✗ SUPABASE_DB_URL no tiene el formato postgresql://usuario:contraseña@servidor:puerto/base");
+  process.exit(1);
+}
+const [, user, password, host, port, database] = partes;
+
 const soloVer = process.argv.includes("--ver");
 // Conexión cifrada (equivalente a sslmode=require).
-const cliente = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+const cliente = new pg.Client({
+  user,
+  password,
+  host,
+  port: Number(port),
+  database,
+  ssl: { rejectUnauthorized: false },
+});
 
 function describirError(error) {
   return [error.message, error.detail && `Detalle: ${error.detail}`, error.hint && `Sugerencia: ${error.hint}`]
