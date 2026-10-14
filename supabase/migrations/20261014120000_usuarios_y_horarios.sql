@@ -2,12 +2,13 @@
 -- Etapa 3 · Usuarios de empleados y guardado del horario semanal.
 --
 -- Cómo aplicarla: Supabase → SQL Editor → New query → pegar todo → Run.
+-- Se puede ejecutar más de una vez sin problemas.
 -- =============================================================================
 
 -- Nombre de usuario con el que ingresa el empleado (ej.: juan.perez).
 -- Los administradores pueden no tenerlo (ingresan con su email).
 alter table public.perfiles
-  add column usuario text unique check (usuario ~ '^[a-z0-9._-]{3,30}$');
+  add column if not exists usuario text unique check (usuario ~ '^[a-z0-9._-]{3,30}$');
 
 -- El usuario se toma de app_metadata, que solo puede escribir el servidor con
 -- la clave secreta. Nunca de user_metadata, que el propio usuario puede modificar.
@@ -32,7 +33,7 @@ $$;
 -- Reemplaza todo el horario semanal de un empleado en una sola transacción.
 -- p_turnos: [{"local_id": "...", "dia_semana": 1, "hora_entrada": "09:00", "hora_salida": "13:00"}, ...]
 -- Se ejecuta con los permisos de quien la llama: las políticas RLS exigen ser admin.
-create function public.reemplazar_horarios(p_perfil_id uuid, p_turnos jsonb)
+create or replace function public.reemplazar_horarios(p_perfil_id uuid, p_turnos jsonb)
 returns void
 language plpgsql
 security invoker
