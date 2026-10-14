@@ -5,6 +5,10 @@
 -- Se puede ejecutar más de una vez sin problemas.
 -- =============================================================================
 
+-- Si una tabla está ocupada por otra conexión, fallar a los 10 s con un
+-- mensaje claro en lugar de quedar esperando indefinidamente.
+set lock_timeout = '10s';
+
 -- Nombre de usuario con el que ingresa el empleado (ej.: juan.perez).
 -- Los administradores pueden no tenerlo (ingresan con su email).
 alter table public.perfiles
