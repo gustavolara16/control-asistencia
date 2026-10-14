@@ -8,6 +8,8 @@ export type EstadoSolicitud = "pendiente" | "aprobada" | "rechazada";
 export type PerfilRow = {
   id: string;
   nombre_completo: string;
+  /** Usuario de ingreso de los empleados (null para administradores). */
+  usuario: string | null;
   rol: Rol;
   activo: boolean;
   created_at: string;

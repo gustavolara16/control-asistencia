@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth";
 import { inicioDelDia } from "@/lib/fechas";
@@ -67,11 +68,24 @@ async function ResumenAdmin() {
         ))}
       </section>
 
-      {(locales.count ?? 0) === 0 && (
+      {(locales.count ?? 0) === 0 ? (
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Todavía no hay locales cargados. La gestión de locales, empleados y horarios llega en la
-          próxima etapa.
+          Primer paso: cargá tus locales en{" "}
+          <Link href="/admin/locales/nuevo" className="font-medium underline">
+            Locales → Nuevo local
+          </Link>
+          .
         </p>
+      ) : (
+        (empleados.count ?? 0) === 0 && (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Siguiente paso: dá de alta a tu personal en{" "}
+            <Link href="/admin/empleados/nuevo" className="font-medium underline">
+              Empleados → Nuevo empleado
+            </Link>
+            .
+          </p>
+        )
       )}
     </>
   );

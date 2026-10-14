@@ -3,74 +3,21 @@
 // Uso: npm run test:db
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { PGlite } from "@electric-sql/pglite";
+import { crearBase, rejects } from "./helpers.mjs";
 
-const MIGRATIONS_DIR = join(import.meta.dirname, "..", "migrations");
-
-// Lo mínimo de Supabase que usan las migraciones: roles, auth.users y auth.uid(),
-// más los privilegios por defecto que Supabase otorga en el esquema public.
-const SUPABASE_STUB = `
-  create role anon nologin;
-  create role authenticated nologin;
-  create schema auth;
-  create table auth.users (
-    id uuid primary key default gen_random_uuid(),
-    email text,
-    raw_user_meta_data jsonb not null default '{}'
-  );
-  create function auth.uid() returns uuid language sql stable as $$
-    select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
-  $$;
-  grant usage on schema auth, public to anon, authenticated;
-  grant execute on function auth.uid() to anon, authenticated;
-  alter default privileges in schema public grant all on tables to anon, authenticated;
-  alter default privileges in schema public grant all on sequences to anon, authenticated;
-  alter default privileges in schema public grant all on functions to anon, authenticated;
-`;
-
-let db;
-const ids = {};
-
-// Ejecuta SQL como un usuario concreto (o como anon / superusuario).
-async function as(who, sql, params = []) {
-  await db.exec("reset role; select set_config('request.jwt.claim.sub', '', false);");
-  if (who === "anon") {
-    await db.exec("set role anon;");
-  } else if (who !== "postgres") {
-    await db.query("select set_config('request.jwt.claim.sub', $1, false)", [ids[who]]);
-    await db.exec("set role authenticated;");
-  }
-  try {
-    return await db.query(sql, params);
-  } finally {
-    await db.exec("reset role;");
-  }
-}
-
-async function rejects(promise, pattern) {
-  await assert.rejects(promise, (error) => pattern.test(error.message));
-}
+let as;
+let ids;
 
 before(async () => {
-  db = new PGlite();
-  await db.exec(SUPABASE_STUB);
-
   // Un usuario que ya existía antes de la migración (como tu usuario de prueba).
-  const previo = await db.query("insert into auth.users (email) values ('previo@ejemplo.test') returning id");
-  ids.previo = previo.rows[0].id;
-
-  for (const file of readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort()) {
-    await db.exec(readFileSync(join(MIGRATIONS_DIR, file), "utf8"));
-  }
+  const base = await crearBase(async (db, ids) => {
+    const { rows } = await db.query("insert into auth.users (email) values ('previo@ejemplo.test') returning id");
+    ids.previo = rows[0].id;
+  });
+  ({ as, ids } = base);
 
   for (const name of ["admin", "ana", "beto"]) {
-    const { rows } = await db.query(
-      "insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id",
-      [`${name}@ejemplo.test`, { nombre_completo: name.toUpperCase(), rol: "admin" }],
-    );
-    ids[name] = rows[0].id;
+    await base.crearUsuario(name, { userMeta: { nombre_completo: name.toUpperCase(), rol: "admin" } });
   }
   await as("postgres", "update public.perfiles set rol = 'admin' where id = $1", [ids.admin]);
 });

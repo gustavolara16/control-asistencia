@@ -11,14 +11,16 @@ export function LoginForm() {
   return (
     <form action={formAction} className="mt-6 flex flex-col gap-4">
       <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
-        Email
+        Usuario
         <input
-          name="email"
-          type="email"
-          autoComplete="email"
-          inputMode="email"
+          name="usuario"
+          type="text"
+          autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
-          defaultValue={state.email}
+          defaultValue={state.usuario}
           className="h-12 rounded-lg border border-slate-300 px-3 text-base text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
         />
       </label>
