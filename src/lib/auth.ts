@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { Rol } from "@/types/db";
 
@@ -18,6 +19,9 @@ export type Perfil = SessionUser & {
 // Toda página o acción protegida debe pasar por acá (no confiar solo en el proxy).
 // `cache` evita repetir la verificación dentro de un mismo request.
 export const requireUser = cache(async (): Promise<SessionUser> => {
+  // La sesión se valida contra la hora actual (vencimiento del token), así que
+  // nunca se prepara por adelantado: siempre se evalúa al recibir el pedido.
+  await connection();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
 
