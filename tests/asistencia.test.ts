@@ -174,3 +174,14 @@ test("historial: un día por fecha, del más reciente al más antiguo, sin días
     ],
   );
 });
+
+test("antes del alta del empleado no se cuentan turnos ni ausencias", () => {
+  const altas = new Map([[ANA, FECHA]]);
+  const datos = { ahora: new Date(hora("20:00")), turnos: [turno("09:00", "17:00", CENTRO, 4), turno("09:00", "17:00")], tolerancias: new Map(), altas };
+  // Jueves 15: todavía no tenía cuenta. Viernes 16: ya rige su horario.
+  assert.equal(calcularAsistencia({ fecha: "2026-10-15", marcaciones: [], ...datos }).length, 0);
+  assert.equal(calcularAsistencia({ fecha: FECHA, marcaciones: [], ...datos })[0].estado, "ausente");
+  // Si marcó antes del alta (no debería pasar), igual se muestra.
+  const filas = calcularAsistencia({ fecha: "2026-10-15", marcaciones: [marca("entrada", "09:00", "2026-10-15")], ...datos });
+  assert.equal(filas[0].estado, "sin_horario");
+});

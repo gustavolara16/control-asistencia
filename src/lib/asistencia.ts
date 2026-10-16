@@ -102,6 +102,8 @@ type TurnoCalculado = { localId: string; entrada: string; salida: string; inicio
  * - `marcaciones`: no anuladas, desde el inicio de `fecha` hasta al menos
  *   18 h después de su fin (para encontrar las salidas de turnos nocturnos).
  * - `tolerancias`: minutos de tolerancia por local.
+ * - `altas`: fecha desde la que rige el horario de cada empleado (el día en
+ *   que se creó su cuenta). Antes de esa fecha no se cuentan turnos ni ausencias.
  */
 export function calcularAsistencia({
   fecha,
@@ -109,23 +111,26 @@ export function calcularAsistencia({
   turnos,
   marcaciones,
   tolerancias,
+  altas,
 }: {
   fecha: string;
   ahora: Date;
   turnos: TurnoDia[];
   marcaciones: MarcacionDia[];
   tolerancias: Map<string, number>;
+  altas?: Map<string, string>;
 }): FilaAsistencia[] {
   const diaSemana = diaSemanaDe(fecha);
+  const rige = (t: TurnoDia) => t.dia_semana === diaSemana && fecha >= (altas?.get(t.perfil_id) ?? fecha);
   const perfiles = new Set([
-    ...turnos.filter((t) => t.dia_semana === diaSemana).map((t) => t.perfil_id),
+    ...turnos.filter(rige).map((t) => t.perfil_id),
     ...marcaciones.map((m) => m.perfil_id),
   ]);
 
   const filas: (FilaAsistencia & { orden: number })[] = [];
   for (const perfilId of perfiles) {
     const turnosDelDia: TurnoCalculado[] = turnos
-      .filter((t) => t.perfil_id === perfilId && t.dia_semana === diaSemana)
+      .filter((t) => t.perfil_id === perfilId && rige(t))
       .map((t) => {
         const entrada = t.hora_entrada.slice(0, 5);
         const salida = t.hora_salida.slice(0, 5);
@@ -238,6 +243,7 @@ export function historialPorDias({
   turnos: TurnoDia[];
   marcaciones: MarcacionDia[];
   tolerancias: Map<string, number>;
+  altas?: Map<string, string>;
 }): DiaHistorial[] {
   const dias: DiaHistorial[] = [];
   for (let fecha = hasta; fecha >= desde; fecha = sumarDias(fecha, -1)) {

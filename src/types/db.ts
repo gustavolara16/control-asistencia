@@ -54,3 +54,19 @@ export type MarcacionRow = {
   origen: "qr_gps" | "admin";
   anulada: boolean;
 };
+
+export type SolicitudRow = {
+  id: number;
+  perfil_id: string;
+  /** Marcación a corregir, o null si se pide agregar una que faltó. */
+  marcacion_id: number | null;
+  local_id: string | null;
+  tipo: TipoMarcacion | null;
+  fecha_hora_propuesta: string;
+  motivo: string;
+  estado: EstadoSolicitud;
+  revisada_por: string | null;
+  revisada_en: string | null;
+  respuesta: string | null;
+  created_at: string;
+};

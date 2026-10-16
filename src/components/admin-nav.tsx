@@ -7,6 +7,8 @@ import { Suspense } from "react";
 const ENLACES = [
   { href: "/admin", texto: "Resumen" },
   { href: "/admin/asistencia", texto: "Asistencia" },
+  { href: "/admin/correcciones", texto: "Correcciones" },
+  { href: "/admin/informes", texto: "Informes" },
   { href: "/admin/locales", texto: "Locales" },
   { href: "/admin/empleados", texto: "Empleados" },
 ];

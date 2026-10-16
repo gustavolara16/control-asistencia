@@ -23,12 +23,12 @@ export async function HistorialAsistencia({
   const desde = sumarDias(hasta, -(dias - 1));
 
   const supabase = await createClient();
-  const { turnos, marcaciones, tolerancias, nombreLocal } = await cargarDatosAsistencia(supabase, {
+  const { turnos, marcaciones, tolerancias, altas, nombreLocal } = await cargarDatosAsistencia(supabase, {
     desde,
     hasta,
     perfilId,
   });
-  const historial = historialPorDias({ desde, hasta, ahora, turnos, marcaciones, tolerancias });
+  const historial = historialPorDias({ desde, hasta, ahora, turnos, marcaciones, tolerancias, altas });
 
   return <HistorialDias dias={historial} nombreLocal={nombreLocal} hrefCorregir={hrefCorregir} />;
 }

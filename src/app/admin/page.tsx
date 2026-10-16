@@ -49,7 +49,7 @@ async function ResumenAdmin() {
     { titulo: "Locales activos", valor: locales.count ?? 0, href: "/admin/locales" },
     { titulo: "Empleados activos", valor: empleados.count ?? 0, href: "/admin/empleados" },
     { titulo: "Marcaciones de hoy", valor: marcacionesHoy.count ?? 0, href: "/admin/asistencia" },
-    { titulo: "Correcciones pendientes", valor: solicitudesPendientes.count ?? 0, href: null },
+    { titulo: "Correcciones pendientes", valor: solicitudesPendientes.count ?? 0, href: "/admin/correcciones" },
   ];
 
   return (

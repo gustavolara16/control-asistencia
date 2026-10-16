@@ -19,14 +19,19 @@ export function BotonEnviar({
   children,
   enviando = "Guardando…",
   className = claseBotonPrimario,
+  nombre,
+  valor,
 }: {
   children: ReactNode;
   enviando?: string;
   className?: string;
+  /** name/value del botón: viajan con el formulario (útil con varios botones). */
+  nombre?: string;
+  valor?: string;
 }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} className={className}>
+    <button type="submit" name={nombre} value={valor} disabled={pending} className={className}>
       {pending ? enviando : children}
     </button>
   );

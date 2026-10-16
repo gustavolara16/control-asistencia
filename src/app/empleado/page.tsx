@@ -84,6 +84,14 @@ async function InicioEmpleado() {
         <span className="text-xs font-normal">Escaneá el QR del local</span>
       </Link>
 
+      <Link
+        href="/empleado/correcciones"
+        className="rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm transition-colors hover:border-brand"
+      >
+        <span className="font-medium text-slate-900">¿Te olvidaste de marcar o una hora quedó mal?</span>
+        <span className="block text-brand">Pedí una corrección →</span>
+      </Link>
+
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="font-semibold text-slate-900">Tu horario de hoy ({NOMBRES_DIAS[diaSemana]})</h2>
         {horarios.length === 0 ? (
