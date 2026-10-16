@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseEnv, isSupabaseConfigured } from "@/lib/env";
+import { esDestinoVolverValido } from "@/lib/volver";
 
 // Rutas accesibles sin sesión.
 const PUBLIC_PATHS = new Set(["/", "/login"]);
@@ -42,7 +43,9 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!isLoggedIn && !PUBLIC_PATHS.has(pathname)) {
-    return redirectWithCookies("/login", request, response);
+    const destino = `${pathname}${request.nextUrl.search}`;
+    const login = esDestinoVolverValido(destino) ? `/login?volver=${encodeURIComponent(destino)}` : "/login";
+    return redirectWithCookies(login, request, response);
   }
   if (isLoggedIn && pathname === "/login") {
     return redirectWithCookies("/panel", request, response);

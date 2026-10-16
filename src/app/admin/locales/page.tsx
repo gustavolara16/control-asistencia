@@ -5,7 +5,7 @@ import { claseBotonPrimario, claseTarjeta } from "@/components/ui/estilos";
 import { EtiquetaEstado } from "@/components/ui/etiqueta-estado";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import type { LocalRow } from "@/types/db";
+import { COLUMNAS_LOCAL, type LocalRow } from "@/types/db";
 
 export const metadata: Metadata = {
   title: "Locales",
@@ -34,7 +34,7 @@ async function ListaLocales() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("locales")
-    .select("*, empleado_locales(count)")
+    .select(`${COLUMNAS_LOCAL}, empleado_locales(count)`)
     .order("activo", { ascending: false })
     .order("nombre");
   if (error) throw new Error("No se pudieron cargar los locales.");

@@ -3,7 +3,7 @@ import { logout } from "@/actions/auth";
 // Encabezado común de las pantallas con sesión iniciada.
 export function AppHeader({ titulo }: { titulo: string }) {
   return (
-    <header className="border-b border-slate-200 bg-white">
+    <header className="border-b border-slate-200 bg-white print:hidden">
       <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4">
         <p className="font-semibold text-slate-900">
           <span className="text-brand">Asistencia</span>

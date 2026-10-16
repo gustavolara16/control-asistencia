@@ -26,7 +26,7 @@ function EnlacesConRuta() {
 
 function Enlaces({ pathname }: { pathname: string | null }) {
   return (
-    <nav className="border-b border-slate-200 bg-white">
+    <nav className="border-b border-slate-200 bg-white print:hidden">
       <ul className="mx-auto flex w-full max-w-5xl gap-1 overflow-x-auto px-4">
         {ENLACES.map(({ href, texto }) => {
           const activo = pathname !== null && (href === "/admin" ? pathname === href : pathname.startsWith(href));

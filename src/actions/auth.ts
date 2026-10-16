@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { emailParaLogin } from "@/lib/usuarios";
+import { esDestinoVolverValido } from "@/lib/volver";
 
 export type LoginState = {
   error?: string;
@@ -29,7 +30,8 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     return { error: "Usuario o contraseña incorrectos.", usuario };
   }
 
-  redirect("/panel");
+  const volver = formData.get("volver");
+  redirect(esDestinoVolverValido(volver) ? volver : "/panel");
 }
 
 export async function logout() {

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { requirePerfil } from "@/lib/auth";
-import { fechaLocal, formatearFechaHora, horaCorta, NOMBRES_DIAS } from "@/lib/fechas";
+import { esEntradaAbierta } from "@/lib/marcaciones";
+import Link from "next/link";
+import { fechaLocal, formatearFechaHora, formatearHora, horaCorta, NOMBRES_DIAS } from "@/lib/fechas";
 import { createClient } from "@/lib/supabase/server";
 import type { HorarioRow, LocalRow, MarcacionRow } from "@/types/db";
 
@@ -54,6 +56,8 @@ async function InicioEmpleado() {
     "id" | "local_id" | "tipo" | "registrada_en" | "anulada"
   >[];
   const nombreLocal = new Map(locales.map((l) => [l.id, l.nombre]));
+  const ultima = marcaciones.find((m) => !m.anulada);
+  const entradaAbierta = esEntradaAbierta(ultima);
 
   return (
     <>
@@ -66,14 +70,20 @@ async function InicioEmpleado() {
         </p>
       </div>
 
-      <button
-        type="button"
-        disabled
-        className="h-14 rounded-2xl bg-brand text-lg font-semibold text-white opacity-50"
+      {entradaAbierta && ultima && (
+        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          Estás trabajando desde las {formatearHora(ultima.registrada_en)} en{" "}
+          {nombreLocal.get(ultima.local_id) ?? "tu local"}.
+        </p>
+      )}
+
+      <Link
+        href="/marcar"
+        className="flex h-16 flex-col items-center justify-center rounded-2xl bg-brand text-lg font-semibold text-white transition-colors hover:bg-brand-dark"
       >
-        Marcar entrada / salida
-        <span className="block text-xs font-normal">Disponible próximamente</span>
-      </button>
+        {entradaAbierta ? "Marcar salida" : "Marcar entrada"}
+        <span className="text-xs font-normal">Escaneá el QR del local</span>
+      </Link>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="font-semibold text-slate-900">Tu horario de hoy ({NOMBRES_DIAS[diaSemana]})</h2>

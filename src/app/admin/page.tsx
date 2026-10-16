@@ -23,7 +23,7 @@ async function ResumenAdmin() {
   const hoy = inicioDelDia(new Date()).toISOString();
 
   const [locales, empleados, marcacionesHoy, solicitudesPendientes] = await Promise.all([
-    supabase.from("locales").select("*", { count: "exact", head: true }).eq("activo", true),
+    supabase.from("locales").select("id", { count: "exact", head: true }).eq("activo", true),
     supabase
       .from("perfiles")
       .select("*", { count: "exact", head: true })

@@ -3,12 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { actualizarLocal, cambiarEstadoLocal } from "@/actions/locales";
-import { claseBotonPeligro, claseBotonPrimario, claseTarjeta } from "@/components/ui/estilos";
+import { claseBotonPeligro, claseBotonPrimario, claseBotonSecundario, claseTarjeta } from "@/components/ui/estilos";
 import { EtiquetaEstado } from "@/components/ui/etiqueta-estado";
 import { requireAdmin } from "@/lib/auth";
 import { esUuid } from "@/lib/formularios";
 import { createClient } from "@/lib/supabase/server";
-import type { LocalRow } from "@/types/db";
+import { COLUMNAS_LOCAL, type LocalRow } from "@/types/db";
 import { LocalForm } from "../local-form";
 
 export const metadata: Metadata = {
@@ -35,7 +35,7 @@ async function EditarLocal({ id }: { id: string }) {
   if (!esUuid(id)) notFound();
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("locales").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await supabase.from("locales").select(COLUMNAS_LOCAL).eq("id", id).maybeSingle();
   if (error) throw new Error("No se pudo cargar el local.");
   if (!data) notFound();
   const local = data as LocalRow;
@@ -45,6 +45,9 @@ async function EditarLocal({ id }: { id: string }) {
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold text-slate-900">{local.nombre}</h1>
         <EtiquetaEstado activo={local.activo} />
+        <Link href={`/admin/locales/${local.id}/qr`} className={`${claseBotonSecundario} ml-auto`}>
+          Código QR para marcar
+        </Link>
       </div>
 
       <section className={`${claseTarjeta} max-w-2xl`}>

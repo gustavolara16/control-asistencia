@@ -1,15 +1,22 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 import { login, type LoginState } from "@/actions/auth";
 
 const initialState: LoginState = {};
 
-export function LoginForm() {
+// Lee ?volver= de la dirección (el servidor vuelve a validar el destino).
+export function LoginFormConVolver() {
+  return <LoginForm volver={useSearchParams().get("volver")} />;
+}
+
+export function LoginForm({ volver }: { volver: string | null }) {
   const [state, formAction, pending] = useActionState(login, initialState);
 
   return (
     <form action={formAction} className="mt-6 flex flex-col gap-4">
+      {volver && <input type="hidden" name="volver" value={volver} />}
       <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
         Usuario
         <input

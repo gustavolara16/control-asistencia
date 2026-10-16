@@ -77,6 +77,17 @@ export async function actualizarLocal(
   return { ok: "Cambios guardados." };
 }
 
+export async function regenerarQrLocal(localId: string): Promise<void> {
+  await requireAdmin();
+  if (!esUuid(localId)) return;
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("regenerar_qr_local", { p_local_id: localId });
+  if (error) throw new Error("No se pudo regenerar el código QR.");
+
+  refresh();
+}
+
 export async function cambiarEstadoLocal(localId: string, activo: boolean): Promise<void> {
   await requireAdmin();
   if (!esUuid(localId)) return;

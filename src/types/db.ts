@@ -16,6 +16,11 @@ export type PerfilRow = {
   updated_at: string;
 };
 
+// Columnas de locales legibles desde la app (qr_token solo se obtiene con la
+// función qr_token_local, reservada al administrador).
+export const COLUMNAS_LOCAL =
+  "id, nombre, direccion, latitud, longitud, radio_metros, tolerancia_minutos, activo, created_at, updated_at";
+
 export type LocalRow = {
   id: string;
   nombre: string;
