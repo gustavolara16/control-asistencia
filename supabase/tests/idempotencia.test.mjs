@@ -5,7 +5,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { crearBase } from "./helpers.mjs";
 
-const REEJECUTABLES = ["20261014120000_usuarios_y_horarios.sql", "20261015120000_marcacion_qr_gps.sql"];
+const REEJECUTABLES = [
+  "20261014120000_usuarios_y_horarios.sql",
+  "20261015120000_marcacion_qr_gps.sql",
+  "20261016120000_correcciones.sql",
+];
 
 for (const archivo of REEJECUTABLES) {
   test(`${archivo} es re-ejecutable`, async () => {

@@ -134,6 +134,12 @@ async function AsistenciaDelDia(props: { fecha?: string | string[]; local?: stri
                   <EtiquetasAsistencia fila={fila} />
                 </div>
                 <DetalleAsistencia fila={fila} nombreLocal={datos.nombreLocal} />
+                <Link
+                  href={`/admin/empleados/${fila.perfilId}/marcaciones?fecha=${fecha}`}
+                  className="self-start text-xs font-medium text-brand hover:underline print:hidden"
+                >
+                  Ver o corregir marcaciones
+                </Link>
               </li>
             ))}
           </ul>

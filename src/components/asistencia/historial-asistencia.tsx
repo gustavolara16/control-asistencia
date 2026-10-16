@@ -9,7 +9,15 @@ import { HistorialDias } from "./historial-dias";
  * verificado la sesión; además, las políticas RLS impiden que un empleado vea
  * datos de otro.
  */
-export async function HistorialAsistencia({ perfilId, dias }: { perfilId: string; dias: number }) {
+export async function HistorialAsistencia({
+  perfilId,
+  dias,
+  hrefCorregir,
+}: {
+  perfilId: string;
+  dias: number;
+  hrefCorregir?: string;
+}) {
   const ahora = new Date();
   const hasta = fechaLocal(ahora).fecha;
   const desde = sumarDias(hasta, -(dias - 1));
@@ -22,5 +30,5 @@ export async function HistorialAsistencia({ perfilId, dias }: { perfilId: string
   });
   const historial = historialPorDias({ desde, hasta, ahora, turnos, marcaciones, tolerancias });
 
-  return <HistorialDias dias={historial} nombreLocal={nombreLocal} />;
+  return <HistorialDias dias={historial} nombreLocal={nombreLocal} hrefCorregir={hrefCorregir} />;
 }
