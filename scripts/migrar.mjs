@@ -3,8 +3,9 @@
 // Uso: npm run db:migrar          (aplica las pendientes)
 //      npm run db:migrar -- --ver (solo muestra el estado)
 //
-// Necesita SUPABASE_DB_URL en .env.local (cadena de conexión "Session pooler").
-// La cadena incluye la contraseña de la base: nunca se muestra en pantalla.
+// Necesita SUPABASE_DB_URL en .env.migraciones (cadena de conexión "Session
+// pooler"). Va en un archivo aparte de .env.local para que la contraseña de la
+// base nunca viaje con la app publicada. Nunca se muestra en pantalla.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import pg from "pg";
@@ -14,14 +15,14 @@ const DIRECTORIO = join(import.meta.dirname, "..", "supabase", "migrations");
 const MIGRACION_BASE = "20261013120000_esquema_inicial.sql";
 
 try {
-  process.loadEnvFile(join(import.meta.dirname, "..", ".env.local"));
+  process.loadEnvFile(join(import.meta.dirname, "..", ".env.migraciones"));
 } catch {
-  // Sin .env.local: se avisa abajo.
+  // Sin .env.migraciones: se avisa abajo.
 }
 
 const url = process.env.SUPABASE_DB_URL;
 if (!url) {
-  console.error("✗ Falta SUPABASE_DB_URL en .env.local (ver .env.example).");
+  console.error("✗ Falta SUPABASE_DB_URL en .env.migraciones (ver .env.example).");
   process.exit(1);
 }
 if (url.includes("[YOUR-PASSWORD]")) {

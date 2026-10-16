@@ -1,0 +1,9 @@
+# Publicación en Netlify. Las claves NO van acá: se cargan como variables de
+# entorno en Netlify (Site configuration → Environment variables).
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "24"
+  NEXT_TELEMETRY_DISABLED = "1"
