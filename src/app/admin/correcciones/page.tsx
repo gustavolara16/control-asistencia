@@ -37,7 +37,7 @@ async function Pedidos() {
       .neq("estado", "pendiente")
       .order("revisada_en", { ascending: false })
       .limit(30),
-    supabase.from("perfiles").select("id, nombre_completo"),
+    supabase.from("perfiles").select("id, nombre_completo, rol, activo").order("nombre_completo"),
     supabase.from("locales").select("id, nombre"),
   ]);
   if (pendientesRes.error || resueltosRes.error || perfilesRes.error || localesRes.error) {
@@ -46,9 +46,9 @@ async function Pedidos() {
 
   const pendientes = pendientesRes.data as unknown as Solicitud[];
   const resueltos = resueltosRes.data as unknown as Solicitud[];
-  const nombre = new Map(
-    (perfilesRes.data as Pick<PerfilRow, "id" | "nombre_completo">[]).map((p) => [p.id, p.nombre_completo]),
-  );
+  const perfiles = perfilesRes.data as Pick<PerfilRow, "id" | "nombre_completo" | "rol" | "activo">[];
+  const nombre = new Map(perfiles.map((p) => [p.id, p.nombre_completo]));
+  const empleados = perfiles.filter((p) => p.rol === "empleado");
   const nombreLocal = new Map((localesRes.data as Pick<LocalRow, "id" | "nombre">[]).map((l) => [l.id, l.nombre]));
 
   // Día de la marcación afectada (para revisar el contexto antes de decidir).
@@ -60,13 +60,40 @@ async function Pedidos() {
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Pedidos de corrección</h1>
         <p className="text-sm text-slate-600">
-          Los empleados avisan si se olvidaron de marcar o si una hora quedó mal. Al aprobar, la corrección se aplica y
-          queda registrada en el historial.
+          Corregí marcaciones vos mismo o revisá los pedidos de los empleados. Nada se borra: todo queda registrado en el
+          historial con su motivo.
         </p>
       </div>
 
       <section className={claseTarjeta}>
-        <h2 className="mb-3 font-semibold text-slate-900">Pendientes ({pendientes.length})</h2>
+        <h2 className="mb-1 font-semibold text-slate-900">Anular o corregir una marcación</h2>
+        <p className="mb-3 text-sm text-slate-600">
+          Elegí el empleado: vas a ver sus marcaciones del día, con las opciones <strong>Anular</strong>,{" "}
+          <strong>Corregir hora</strong> y <strong>Agregar una marcación que faltó</strong>.
+        </p>
+        {empleados.length === 0 ? (
+          <p className="text-sm text-slate-600">Todavía no hay empleados.</p>
+        ) : (
+          <ul className="flex flex-wrap gap-2">
+            {empleados.map((e) => (
+              <li key={e.id}>
+                <Link
+                  href={`/admin/empleados/${e.id}/marcaciones`}
+                  className={`inline-flex h-10 items-center rounded-lg border px-3 text-sm font-medium transition-colors hover:border-brand hover:text-brand ${
+                    e.activo ? "border-slate-300 text-slate-800" : "border-slate-200 text-slate-400"
+                  }`}
+                >
+                  {e.nombre_completo}
+                  {!e.activo && " (inactivo)"}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className={claseTarjeta}>
+        <h2 className="mb-3 font-semibold text-slate-900">Pedidos pendientes ({pendientes.length})</h2>
         {pendientes.length === 0 ? (
           <p className="text-sm text-slate-600">No hay pedidos pendientes.</p>
         ) : (
