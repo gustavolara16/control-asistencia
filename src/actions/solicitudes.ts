@@ -55,19 +55,19 @@ export async function pedirCorreccion(_prev: EstadoFormulario, formData: FormDat
 
 export async function resolverSolicitud(
   solicitudId: number,
+  aprobar: boolean,
   _prev: EstadoFormulario,
   formData: FormData,
 ): Promise<EstadoFormulario> {
   await requireAdmin();
   if (!Number.isSafeInteger(solicitudId) || solicitudId <= 0) return { error: "Pedido inválido." };
-  const decision = leerTexto(formData, "decision");
-  if (decision !== "aprobar" && decision !== "rechazar") return { error: "Elegí aprobar o rechazar." };
+  if (typeof aprobar !== "boolean") return { error: "Elegí aprobar o rechazar." };
   const respuesta = leerTexto(formData, "respuesta");
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("resolver_solicitud", {
     p_solicitud_id: solicitudId,
-    p_aprobar: decision === "aprobar",
+    p_aprobar: aprobar,
     p_respuesta: respuesta || null,
   });
   if (error) {
@@ -76,5 +76,5 @@ export async function resolverSolicitud(
     return { error: "No se pudo guardar. Intentá de nuevo." };
   }
   refresh();
-  return { ok: decision === "aprobar" ? "Pedido aprobado y corrección aplicada." : "Pedido rechazado." };
+  return { ok: aprobar ? "Pedido aprobado y corrección aplicada." : "Pedido rechazado." };
 }

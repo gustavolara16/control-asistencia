@@ -2,39 +2,36 @@
 
 import { useActionState } from "react";
 import { resolverSolicitud } from "@/actions/solicitudes";
-import { claseBotonPeligro, claseBotonPrimario, claseInput } from "@/components/ui/estilos";
+import { claseBotonPeligro, claseInput } from "@/components/ui/estilos";
 import { BotonEnviar, MensajeFormulario } from "@/components/ui/formulario";
 import { estadoInicial } from "@/lib/formularios";
 
-/** Aprobar o rechazar un pedido. El botón que se toca envía la decisión. */
+/** Aprobar o rechazar un pedido. Cada decisión es un formulario aparte. */
 export function ResolverPedido({ solicitudId }: { solicitudId: number }) {
-  const [estado, accion] = useActionState(resolverSolicitud.bind(null, solicitudId), estadoInicial);
-  return (
-    <form action={accion} className="flex flex-col gap-2">
-      <input
-        name="respuesta"
-        maxLength={500}
-        placeholder="Respuesta para el empleado (obligatoria si rechazás)"
-        className={claseInput}
-      />
-      <MensajeFormulario estado={estado} />
-      <div className="flex flex-wrap gap-2">
-        <BotonDecision valor="aprobar" clase={claseBotonPrimario}>
-          Aprobar y corregir
-        </BotonDecision>
-        <BotonDecision valor="rechazar" clase={claseBotonPeligro}>
-          Rechazar
-        </BotonDecision>
-      </div>
-    </form>
-  );
-}
+  const [estadoAprobar, aprobar] = useActionState(resolverSolicitud.bind(null, solicitudId, true), estadoInicial);
+  const [estadoRechazar, rechazar] = useActionState(resolverSolicitud.bind(null, solicitudId, false), estadoInicial);
 
-function BotonDecision({ valor, clase, children }: { valor: string; clase: string; children: string }) {
-  // name/value del botón viajan en el formulario e indican la decisión.
   return (
-    <BotonEnviar className={clase} enviando="Guardando…" nombre="decision" valor={valor}>
-      {children}
-    </BotonEnviar>
+    <div className="flex flex-col gap-2">
+      <form action={aprobar} className="flex flex-col gap-2">
+        <MensajeFormulario estado={estadoAprobar} />
+        <BotonEnviar enviando="Aplicando…">Aprobar y corregir</BotonEnviar>
+      </form>
+      <details className="rounded-lg border border-slate-200 [&[open]]:bg-slate-50">
+        <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-red-700">Rechazar</summary>
+        <form action={rechazar} className="flex flex-col gap-2 px-3 pb-3">
+          <input
+            name="respuesta"
+            required
+            minLength={3}
+            maxLength={500}
+            placeholder="Motivo del rechazo (lo va a ver el empleado)"
+            className={claseInput}
+          />
+          <MensajeFormulario estado={estadoRechazar} />
+          <BotonEnviar className={claseBotonPeligro}>Rechazar pedido</BotonEnviar>
+        </form>
+      </details>
+    </div>
   );
 }
