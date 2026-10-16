@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { HistorialAsistencia } from "@/components/asistencia/historial-asistencia";
 import { requirePerfil } from "@/lib/auth";
 import { esEntradaAbierta } from "@/lib/marcaciones";
 import Link from "next/link";
-import { fechaLocal, formatearFechaHora, formatearHora, horaCorta, NOMBRES_DIAS } from "@/lib/fechas";
+import { fechaLocal, formatearHora, horaCorta, NOMBRES_DIAS } from "@/lib/fechas";
 import { createClient } from "@/lib/supabase/server";
 import type { HorarioRow, LocalRow, MarcacionRow } from "@/types/db";
 
@@ -35,10 +36,11 @@ async function InicioEmpleado() {
       .order("hora_entrada"),
     supabase
       .from("marcaciones")
-      .select("id, local_id, tipo, registrada_en, anulada")
+      .select("id, local_id, tipo, registrada_en")
       .eq("perfil_id", perfil.id)
+      .eq("anulada", false)
       .order("registrada_en", { ascending: false })
-      .limit(5),
+      .limit(1),
   ]);
 
   if (localesRes.error || horariosRes.error || marcacionesRes.error) {
@@ -51,12 +53,9 @@ async function InicioEmpleado() {
     .flatMap((fila) => (fila.locales ? [fila.locales] : []))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
   const horarios = horariosRes.data as Pick<HorarioRow, "id" | "local_id" | "hora_entrada" | "hora_salida">[];
-  const marcaciones = marcacionesRes.data as Pick<
-    MarcacionRow,
-    "id" | "local_id" | "tipo" | "registrada_en" | "anulada"
-  >[];
+  const marcaciones = marcacionesRes.data as Pick<MarcacionRow, "id" | "local_id" | "tipo" | "registrada_en">[];
   const nombreLocal = new Map(locales.map((l) => [l.id, l.nombre]));
-  const ultima = marcaciones.find((m) => !m.anulada);
+  const ultima = marcaciones[0];
   const entradaAbierta = esEntradaAbierta(ultima);
 
   return (
@@ -101,21 +100,10 @@ async function InicioEmpleado() {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="font-semibold text-slate-900">Últimas marcaciones</h2>
-        {marcaciones.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-600">Todavía no registraste marcaciones.</p>
-        ) : (
-          <ul className="mt-2 flex flex-col divide-y divide-slate-100 text-sm">
-            {marcaciones.map((m) => (
-              <li key={m.id} className="flex justify-between gap-2 py-2">
-                <span className={m.anulada ? "text-slate-400 line-through" : "text-slate-700"}>
-                  {m.tipo === "entrada" ? "Entrada" : "Salida"} · {nombreLocal.get(m.local_id) ?? "Local"}
-                </span>
-                <span className="tabular-nums text-slate-600">{formatearFechaHora(m.registrada_en)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <h2 className="mb-2 font-semibold text-slate-900">Tus últimos 7 días</h2>
+        <Suspense fallback={<p className="text-sm text-slate-500">Cargando…</p>}>
+          <HistorialAsistencia perfilId={perfil.id} dias={7} />
+        </Suspense>
       </section>
     </>
   );

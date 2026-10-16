@@ -8,6 +8,7 @@ import {
   guardarLocalesEmpleado,
   restablecerContrasena,
 } from "@/actions/empleados";
+import { HistorialAsistencia } from "@/components/asistencia/historial-asistencia";
 import { claseBotonPeligro, claseBotonPrimario, claseInput, claseTarjeta } from "@/components/ui/estilos";
 import { EtiquetaEstado } from "@/components/ui/etiqueta-estado";
 import { FormularioAccion } from "@/components/ui/formulario-accion";
@@ -130,6 +131,14 @@ async function DetalleEmpleado({ id }: { id: string }) {
             salida: horaCorta(h.hora_salida),
           }))}
         />
+      </section>
+
+      <section className={claseTarjeta}>
+        <h2 className="mb-1 font-semibold text-slate-900">Asistencia de los últimos 14 días</h2>
+        <p className="mb-2 text-xs text-slate-500">Se compara con el horario semanal actual.</p>
+        <Suspense fallback={<p className="text-sm text-slate-500">Cargando…</p>}>
+          <HistorialAsistencia perfilId={empleado.id} dias={14} />
+        </Suspense>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">

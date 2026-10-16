@@ -46,10 +46,10 @@ async function ResumenAdmin() {
   }
 
   const tarjetas = [
-    { titulo: "Locales activos", valor: locales.count ?? 0 },
-    { titulo: "Empleados activos", valor: empleados.count ?? 0 },
-    { titulo: "Marcaciones de hoy", valor: marcacionesHoy.count ?? 0 },
-    { titulo: "Correcciones pendientes", valor: solicitudesPendientes.count ?? 0 },
+    { titulo: "Locales activos", valor: locales.count ?? 0, href: "/admin/locales" },
+    { titulo: "Empleados activos", valor: empleados.count ?? 0, href: "/admin/empleados" },
+    { titulo: "Marcaciones de hoy", valor: marcacionesHoy.count ?? 0, href: "/admin/asistencia" },
+    { titulo: "Correcciones pendientes", valor: solicitudesPendientes.count ?? 0, href: null },
   ];
 
   return (
@@ -60,12 +60,25 @@ async function ResumenAdmin() {
       </div>
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {tarjetas.map((t) => (
-          <div key={t.titulo} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-sm text-slate-600">{t.titulo}</p>
-            <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-900">{t.valor}</p>
-          </div>
-        ))}
+        {tarjetas.map((t) => {
+          const contenido = (
+            <>
+              <p className="text-sm text-slate-600">{t.titulo}</p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-900">{t.valor}</p>
+              {t.href && <p className="mt-1 text-xs font-medium text-brand">Ver detalle →</p>}
+            </>
+          );
+          const clase = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm";
+          return t.href ? (
+            <Link key={t.titulo} href={t.href} className={`${clase} transition-colors hover:border-brand`}>
+              {contenido}
+            </Link>
+          ) : (
+            <div key={t.titulo} className={clase}>
+              {contenido}
+            </div>
+          );
+        })}
       </section>
 
       {(locales.count ?? 0) === 0 ? (
