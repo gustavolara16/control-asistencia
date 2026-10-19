@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { HistorialAsistencia } from "@/components/asistencia/historial-asistencia";
+import { TardanzasDelMesEmpleado } from "@/components/normativa/tardanzas-del-mes";
 import { requirePerfil } from "@/lib/auth";
 import { esEntradaAbierta } from "@/lib/marcaciones";
+import { cargarNormativa } from "@/lib/normativa-datos";
 import Link from "next/link";
 import { fechaLocal, formatearHora, horaCorta, NOMBRES_DIAS } from "@/lib/fechas";
 import { createClient } from "@/lib/supabase/server";
@@ -69,6 +71,13 @@ async function InicioEmpleado() {
         </p>
       </div>
 
+      <Suspense fallback={null}>
+        <AvisoNormativa perfilId={perfil.id} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <TardanzasDelMesEmpleado perfilId={perfil.id} />
+      </Suspense>
+
       {entradaAbierta && ultima && (
         <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
           Estás trabajando desde las {formatearHora(ultima.registrada_en)} en{" "}
@@ -90,6 +99,14 @@ async function InicioEmpleado() {
       >
         <span className="font-medium text-slate-900">¿Te olvidaste de marcar o una hora quedó mal?</span>
         <span className="block text-brand">Pedí una corrección →</span>
+      </Link>
+
+      <Link
+        href="/empleado/normativa"
+        className="rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm transition-colors hover:border-brand"
+      >
+        <span className="font-medium text-slate-900">Normativa de asistencia y puntualidad</span>
+        <span className="block text-brand">Ver las reglas →</span>
       </Link>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -114,5 +131,29 @@ async function InicioEmpleado() {
         </Suspense>
       </section>
     </>
+  );
+}
+
+/** Aviso para leer la normativa, mientras no se confirme la lectura de la versión vigente. */
+async function AvisoNormativa({ perfilId }: { perfilId: string }) {
+  const supabase = await createClient();
+  const normativa = await cargarNormativa(supabase);
+  if (!normativa) return null;
+  const { data: lectura } = await supabase
+    .from("normativa_lecturas")
+    .select("version")
+    .eq("perfil_id", perfilId)
+    .eq("version", normativa.version)
+    .maybeSingle();
+  if (lectura) return null;
+
+  return (
+    <Link
+      href="/empleado/normativa"
+      className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm transition-colors hover:border-amber-500"
+    >
+      <span className="font-semibold">📋 {normativa.version > 1 ? "Se actualizó la normativa" : "Hay una normativa nueva"}</span>
+      <span className="block">Leela y confirmá que la leíste →</span>
+    </Link>
   );
 }
