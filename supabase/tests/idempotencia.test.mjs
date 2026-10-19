@@ -12,6 +12,7 @@ const REEJECUTABLES = [
   "20261017120000_solicitudes.sql",
   "20261019120000_avisos.sql",
   "20261019130000_normativa.sql",
+  "20261019140000_cierres_mes.sql",
 ];
 
 for (const archivo of REEJECUTABLES) {

@@ -2,7 +2,10 @@
 
 import { refresh } from "next/cache";
 import { requireAdmin, requirePerfil } from "@/lib/auth";
+import { fechaLocal } from "@/lib/fechas";
 import type { EstadoFormulario } from "@/lib/formularios";
+import { esMesValido, nombreDelMes } from "@/lib/normativa";
+import { guardarCierre } from "@/lib/normativa-datos";
 import { createClient } from "@/lib/supabase/server";
 
 export async function guardarNormativa(_prev: EstadoFormulario, formData: FormData): Promise<EstadoFormulario> {
@@ -38,4 +41,21 @@ export async function confirmarLecturaNormativa(): Promise<{ error?: string }> {
   }
   refresh();
   return {};
+}
+
+/** Guarda (o vuelve a guardar) el cierre de un mes ya terminado. */
+export async function guardarCierreMes(mes: string): Promise<{ ok?: string; error?: string }> {
+  await requireAdmin();
+  const ahora = new Date();
+  if (!esMesValido(mes) || mes >= fechaLocal(ahora).fecha.slice(0, 7)) {
+    return { error: "Solo se puede guardar un mes que ya terminó." };
+  }
+  try {
+    await guardarCierre(await createClient(), mes, "manual", ahora);
+  } catch (error) {
+    console.error("guardarCierreMes", error instanceof Error ? error.message : error);
+    return { error: "No se pudo guardar el cierre. Intentá de nuevo." };
+  }
+  refresh();
+  return { ok: `Listo, se guardó el cierre de ${nombreDelMes(mes)}.` };
 }

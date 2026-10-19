@@ -6,8 +6,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Excluye archivos estáticos, íconos, manifest y service worker.
+  // Excluye archivos estáticos, íconos, manifest y service worker, y el cierre
+  // mensual automático (no tiene sesión: se autoriza con CIERRE_SECRET).
   matcher: [
-    "/((?!_next/static|_next/image|icons/|sw.js|offline.html|manifest.webmanifest|icon.png|apple-icon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!api/cierre-mensual|_next/static|_next/image|icons/|sw.js|offline.html|manifest.webmanifest|icon.png|apple-icon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

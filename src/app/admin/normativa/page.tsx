@@ -5,11 +5,12 @@ import { TextoNormativa } from "@/components/normativa/texto-normativa";
 import { claseBotonSecundario, claseTarjeta } from "@/components/ui/estilos";
 import { requireAdmin } from "@/lib/auth";
 import { fechaLocal, formatearFechaHora } from "@/lib/fechas";
-import { ESCALA_TARDANZAS, esMesValido, nombreDelMes, sancionPorTardanzas, sumarMeses } from "@/lib/normativa";
-import { cargarNormativa, tardanzasDelMes } from "@/lib/normativa-datos";
+import { ESCALA_TARDANZAS, esMesValido, nombreDelMes, sumarMeses } from "@/lib/normativa";
+import { calcularCierre, cargarCierre, cargarNormativa } from "@/lib/normativa-datos";
 import { createClient } from "@/lib/supabase/server";
 import type { PerfilRow } from "@/types/db";
 import { EditarNormativa } from "./editar-normativa";
+import { GuardarCierre } from "./guardar-cierre";
 
 export const metadata: Metadata = {
   title: "Normativa",
@@ -34,13 +35,18 @@ async function NormativaAdmin(props: { mes?: string | string[] }) {
   const mes = esMesValido(props.mes) && props.mes <= mesActual ? props.mes : mesActual;
 
   const supabase = await createClient();
-  const [normativa, tardanzas, perfilesRes] = await Promise.all([
+  const terminado = mes < mesActual;
+  // Un mes terminado y guardado se muestra tal como quedó; si no, se calcula.
+  const cierre = terminado ? await cargarCierre(supabase, mes) : null;
+  const [normativa, filasMes, perfilesRes] = await Promise.all([
     cargarNormativa(supabase),
-    tardanzasDelMes(supabase, { mes, ahora }),
-    supabase.from("perfiles").select("id, nombre_completo, activo").eq("rol", "empleado").order("nombre_completo"),
+    cierre ? cierre.filas : calcularCierre(supabase, mes, ahora),
+    supabase.from("perfiles").select("id, nombre_completo, activo, rol").order("nombre_completo"),
   ]);
   if (perfilesRes.error) throw new Error("No se pudieron cargar los empleados.");
-  const empleados = perfilesRes.data as Pick<PerfilRow, "id" | "nombre_completo" | "activo">[];
+  const perfiles = perfilesRes.data as Pick<PerfilRow, "id" | "nombre_completo" | "activo" | "rol">[];
+  const nombre = new Map(perfiles.map((p) => [p.id, p.nombre_completo]));
+  const empleados = perfiles.filter((p) => p.rol === "empleado");
 
   const lecturasRes = normativa
     ? await supabase.from("normativa_lecturas").select("perfil_id, leida_en").eq("version", normativa.version)
@@ -50,10 +56,9 @@ async function NormativaAdmin(props: { mes?: string | string[] }) {
   const activos = empleados.filter((e) => e.activo);
   const pendientes = activos.filter((e) => !leidas.has(e.id));
 
-  const conTardanzas = empleados
-    .map((e) => ({ ...e, tardanzas: tardanzas.get(e.id) ?? [] }))
-    .filter((e) => e.tardanzas.length > 0)
-    .sort((a, b) => b.tardanzas.length - a.tardanzas.length || a.nombre_completo.localeCompare(b.nombre_completo));
+  const conTardanzas = filasMes
+    .map((f) => ({ ...f, nombre: nombre.get(f.perfil_id) ?? "Empleado" }))
+    .sort((a, b) => b.tardanzas - a.tardanzas || a.nombre.localeCompare(b.nombre));
 
   return (
     <>
@@ -78,6 +83,27 @@ async function NormativaAdmin(props: { mes?: string | string[] }) {
             )}
           </div>
         </div>
+        {!terminado ? (
+          <p className="text-xs text-slate-500">
+            Mes en curso: se calcula en el momento. El 1° del mes que viene se guarda solo y queda fijo.
+          </p>
+        ) : cierre ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            <span>
+              ✓ Guardado el {formatearFechaHora(cierre.guardado_en)}
+              {cierre.origen === "automatico"
+                ? " (automático)"
+                : ` por ${nombre.get(cierre.guardado_por ?? "") ?? "un administrador"}`}
+              . Queda fijo aunque cambien los horarios.
+            </span>
+            <GuardarCierre mes={mes} yaGuardado />
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <span>Este mes terminó y todavía no está guardado. Lo de abajo está calculado con los horarios actuales.</span>
+            <GuardarCierre mes={mes} yaGuardado={false} />
+          </div>
+        )}
         {conTardanzas.length === 0 ? (
           <p className="text-sm text-slate-600">Nadie llegó tarde en este mes.</p>
         ) : (
@@ -92,31 +118,28 @@ async function NormativaAdmin(props: { mes?: string | string[] }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {conTardanzas.map((e) => {
-                  const sancion = sancionPorTardanzas(e.tardanzas.length);
-                  return (
-                    <tr key={e.id} className="align-top">
-                      <td className="py-2 pr-3 font-medium text-slate-900">{e.nombre_completo}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{e.tardanzas.length}</td>
-                      <td className="px-3 py-2">
-                        <span className="flex flex-wrap gap-x-2 gap-y-1">
-                          {e.tardanzas.map((t) => (
-                            <Link
-                              key={`${t.fecha}-${t.localId}`}
-                              href={`/admin/empleados/${e.id}/marcaciones?fecha=${t.fecha}`}
-                              className="whitespace-nowrap text-brand hover:underline"
-                            >
-                              {fechaCorta(t.fecha)} ({t.minutosTarde} min)
-                            </Link>
-                          ))}
-                        </span>
-                      </td>
-                      <td className={`py-2 pl-3 ${sancion ? "font-medium text-red-700" : "text-slate-500"}`}>
-                        {sancion ?? "Todavía nada (1 tardanza)"}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {conTardanzas.map((e) => (
+                  <tr key={e.perfil_id} className="align-top">
+                    <td className="py-2 pr-3 font-medium text-slate-900">{e.nombre}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{e.tardanzas}</td>
+                    <td className="px-3 py-2">
+                      <span className="flex flex-wrap gap-x-2 gap-y-1">
+                        {e.detalle.map((t, i) => (
+                          <Link
+                            key={`${t.fecha}-${i}`}
+                            href={`/admin/empleados/${e.perfil_id}/marcaciones?fecha=${t.fecha}`}
+                            className="whitespace-nowrap text-brand hover:underline"
+                          >
+                            {fechaCorta(t.fecha)} ({t.minutos} min)
+                          </Link>
+                        ))}
+                      </span>
+                    </td>
+                    <td className={`py-2 pl-3 ${e.sancion ? "font-medium text-red-700" : "text-slate-500"}`}>
+                      {e.sancion ?? "Todavía nada (1 tardanza)"}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

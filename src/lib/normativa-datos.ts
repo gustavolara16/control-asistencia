@@ -2,7 +2,7 @@ import "server-only";
 import { cargarDatosAsistencia } from "@/lib/asistencia-datos";
 import { fechaLocal } from "@/lib/fechas";
 import { asistenciaDelPeriodo, type FilaPeriodo } from "@/lib/informes";
-import { diasDelMes } from "@/lib/normativa";
+import { diasDelMes, sancionPorTardanzas } from "@/lib/normativa";
 import type { createClient } from "@/lib/supabase/server";
 
 type Cliente = Awaited<ReturnType<typeof createClient>>;
@@ -35,4 +35,63 @@ export async function tardanzasDelMes(
     porEmpleado.set(fila.perfilId, [...(porEmpleado.get(fila.perfilId) ?? []), fila]);
   }
   return porEmpleado;
+}
+
+/** Resultado de un mes por empleado, como se guarda en el cierre. */
+export type FilaCierre = {
+  perfil_id: string;
+  tardanzas: number;
+  minutos_tarde: number;
+  detalle: { fecha: string; minutos: number; local_id: string }[];
+  sancion: string | null;
+};
+
+export type Cierre = {
+  mes: string;
+  origen: "automatico" | "manual";
+  guardado_por: string | null;
+  guardado_en: string;
+  filas: FilaCierre[];
+};
+
+/** Tardanzas de un mes por empleado (solo empleados, no administradores). */
+export async function calcularCierre(supabase: Cliente, mes: string, ahora: Date): Promise<FilaCierre[]> {
+  const [tardanzas, perfilesRes] = await Promise.all([
+    tardanzasDelMes(supabase, { mes, ahora }),
+    supabase.from("perfiles").select("id").eq("rol", "empleado"),
+  ]);
+  if (perfilesRes.error) throw new Error("No se pudieron cargar los empleados.");
+  const empleados = new Set(perfilesRes.data.map((p) => p.id as string));
+  return [...tardanzas]
+    .filter(([perfilId]) => empleados.has(perfilId))
+    .map(([perfilId, filas]) => ({
+      perfil_id: perfilId,
+      tardanzas: filas.length,
+      minutos_tarde: filas.reduce((total, f) => total + f.minutosTarde, 0),
+      detalle: filas.map((f) => ({ fecha: f.fecha, minutos: f.minutosTarde, local_id: f.localId })),
+      sancion: sancionPorTardanzas(filas.length),
+    }));
+}
+
+/** Calcula y guarda (o reemplaza) el cierre de un mes. Devuelve cuántos empleados tuvieron tardanzas. */
+export async function guardarCierre(
+  supabase: Cliente,
+  mes: string,
+  origen: "automatico" | "manual",
+  ahora: Date,
+): Promise<number> {
+  const filas = await calcularCierre(supabase, mes, ahora);
+  const { error } = await supabase.rpc("guardar_cierre_mes", { p_mes: mes, p_filas: filas, p_origen: origen });
+  if (error) throw new Error(`No se pudo guardar el cierre (${error.code}).`);
+  return filas.length;
+}
+
+export async function cargarCierre(supabase: Cliente, mes: string): Promise<Cierre | null> {
+  const [cierreRes, filasRes] = await Promise.all([
+    supabase.from("cierres_mes").select("mes, origen, guardado_por, guardado_en").eq("mes", mes).maybeSingle(),
+    supabase.from("cierres_tardanzas").select("perfil_id, tardanzas, minutos_tarde, detalle, sancion").eq("mes", mes),
+  ]);
+  if (cierreRes.error || filasRes.error) throw new Error("No se pudo cargar el cierre del mes.");
+  if (!cierreRes.data) return null;
+  return { ...(cierreRes.data as Omit<Cierre, "filas">), filas: filasRes.data as FilaCierre[] };
 }
