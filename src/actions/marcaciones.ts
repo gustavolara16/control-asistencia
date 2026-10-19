@@ -1,6 +1,8 @@
 "use server";
 
+import { after } from "next/server";
 import { requirePerfil } from "@/lib/auth";
+import { avisarMarcacion } from "@/lib/avisos-envio";
 import { esCodigoQrValido } from "@/lib/qr";
 import { createClient } from "@/lib/supabase/server";
 import type { TipoMarcacion } from "@/types/db";
@@ -20,7 +22,7 @@ export async function marcar(
   tipo: TipoMarcacion,
   ubicacion: Ubicacion | null,
 ): Promise<ResultadoMarcacion> {
-  await requirePerfil();
+  const perfil = await requirePerfil();
 
   if (!esCodigoQrValido(codigoQr)) return { ok: false, error: "El código QR no es válido." };
   if (tipo !== "entrada" && tipo !== "salida") return { ok: false, error: "Tipo de marcación inválido." };
@@ -48,5 +50,17 @@ export async function marcar(
   }
 
   const r = data as { tipo: TipoMarcacion; registrada_en: string; local: string };
+
+  // Aviso a los administradores, después de responderle al empleado.
+  // Si falla, la marcación ya quedó registrada igual.
+  after(() =>
+    avisarMarcacion(supabase, {
+      perfilId: perfil.id,
+      empleado: perfil.nombreCompleto || "Un empleado",
+      tipo: r.tipo,
+      registradaEn: r.registrada_en,
+      local: r.local,
+    }).catch((e) => console.error("avisos: error al avisar la marcación", e instanceof Error ? e.message : e)),
+  );
   return { ok: true, tipo: r.tipo, registradaEn: r.registrada_en, local: r.local };
 }

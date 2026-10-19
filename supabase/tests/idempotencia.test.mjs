@@ -10,6 +10,7 @@ const REEJECUTABLES = [
   "20261015120000_marcacion_qr_gps.sql",
   "20261016120000_correcciones.sql",
   "20261017120000_solicitudes.sql",
+  "20261019120000_avisos.sql",
 ];
 
 for (const archivo of REEJECUTABLES) {

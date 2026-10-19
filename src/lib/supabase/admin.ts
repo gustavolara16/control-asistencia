@@ -5,7 +5,7 @@ import { getSupabaseEnv } from "@/lib/env";
 // Cliente con la clave secreta: IGNORA las políticas RLS.
 // Usarlo solo en Server Actions, después de verificar requireAdmin(), y solo
 // para lo que la clave pública no puede hacer (crear usuarios, cambiar
-// contraseñas, bloquear cuentas). Para leer y escribir datos, usar el cliente
+// contraseñas, bloquear cuentas, leer a quién mandar los avisos de marcación). Para leer y escribir datos, usar el cliente
 // normal (lib/supabase/server.ts), que respeta las políticas RLS.
 export function isAdminClientConfigured(): boolean {
   return Boolean(process.env.SUPABASE_SECRET_KEY);

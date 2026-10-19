@@ -27,3 +27,42 @@ self.addEventListener("fetch", (event) => {
     fetch(event.request).catch(async () => (await caches.match(OFFLINE_URL)) ?? Response.error()),
   );
 });
+
+// Avisos para los administradores (por ejemplo, cuando un empleado marca).
+// El servidor los envía cifrados; acá solo se muestran.
+self.addEventListener("push", (event) => {
+  let aviso = {};
+  try {
+    aviso = event.data ? event.data.json() : {};
+  } catch {
+    // Contenido inesperado: se muestra un aviso genérico.
+  }
+  event.waitUntil(
+    self.registration.showNotification(aviso.titulo || "Control de Asistencia", {
+      body: aviso.cuerpo || "",
+      icon: "/icons/icon-192.png",
+      lang: "es",
+      data: { url: typeof aviso.url === "string" ? aviso.url : "/panel" },
+    }),
+  );
+});
+
+// Al tocar el aviso se abre la app (solo páginas de este mismo sitio).
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const destino = new URL(event.notification.data?.url || "/panel", self.location.origin);
+  if (destino.origin !== self.location.origin) return;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ventanas) => {
+      const abierta = ventanas.find((v) => new URL(v.url).origin === self.location.origin);
+      if (abierta) {
+        return abierta
+          .navigate(destino.href)
+          .then((v) => (v ?? abierta).focus())
+          .catch(() => self.clients.openWindow(destino.href));
+      }
+      return self.clients.openWindow(destino.href);
+    }),
+  );
+});
